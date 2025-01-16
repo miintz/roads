@@ -6,6 +6,7 @@ TagManager:
   tags:
   - building
   - obstacle
+  - terrain
   layers:
   - Default
   - TransparentFX

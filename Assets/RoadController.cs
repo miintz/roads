@@ -3,19 +3,23 @@ using System.Linq;
 using UnityEngine;
 using Assets.Helper;
 using static UnityEditor.Progress;
+using System;
 
 public class RoadController : MonoBehaviour
 {
     const string _buildingTag = "building";
     const string _obstacleTag = "obstacle";
+    const string _terrainTag = "terrain";
 
     List<GameObject> Buildings;
     List<GameObject> Obstacles;
+    List<Vector3> TerrainVertices;
 
     void Start()
     {
         Buildings = GameObject.FindGameObjectsWithTag(_buildingTag).ToList();
         Obstacles = GameObject.FindGameObjectsWithTag(_obstacleTag).ToList();
+        TerrainVertices = GameObject.FindGameObjectsWithTag(_terrainTag).SelectMany(g => g.GetComponent<MeshFilter>()?.sharedMesh.vertices).ToList();
     }
 
     // Update is called once per frame
@@ -26,6 +30,34 @@ public class RoadController : MonoBehaviour
 
     private void OnDrawGizmos()
     {
+        var terrainVertices = new List<Vector3>();
+
+        // oogabooga
+        var terrainData = GameObject.FindGameObjectsWithTag(_terrainTag).Select(a => a.GetComponent<Terrain>().terrainData).ToList().First();
+        int heightmapWidth = terrainData.heightmapResolution;
+        int heightmapHeight = terrainData.heightmapResolution;
+
+        // Get heightmap data
+        float[,] heights = terrainData.GetHeights(0, 0, heightmapWidth, heightmapHeight);
+
+        // Terrain dimensions
+        Vector3 terrainSize = terrainData.size;
+        
+        for (int y = 0; y < heightmapHeight; y++)
+        {
+            for (int x = 0; x < heightmapWidth; x++)
+            {
+                // Convert heightmap coordinate to world space
+                float worldX = (x / (float)(heightmapWidth - 1)) * terrainSize.x;
+                float worldY = heights[y, x] * terrainSize.y; // Height value
+                float worldZ = (y / (float)(heightmapHeight - 1)) * terrainSize.z;
+
+                Vector3 vertexPosition = new Vector3(worldX, worldY, worldZ);
+
+                terrainVertices.Add(vertexPosition);
+            }
+        }
+
         var buildings = GameObject.FindGameObjectsWithTag(_buildingTag).Select(o => o.transform.position).ToList();
         foreach (var node in buildings)
         {
@@ -51,11 +83,17 @@ public class RoadController : MonoBehaviour
 
             if (!Physics.Raycast(line[0], line[1] - line[0], out hit))
             {
+
                 Gizmos.color = color;
                 Gizmos.DrawLine(node.Item1, node.Item2);
             }
             else
             {
+                Gizmos.color = Color.magenta;
+                Gizmos.DrawSphere(hit.point, 0.5f);
+
+                Gizmos.color = new Color(255, 0, 126);
+
                 GizmoHelper.DrawLineViaTangentsToTarget(hit, node.Item1, node.Item2, color);
             }
         }
@@ -67,6 +105,13 @@ public class RoadController : MonoBehaviour
         {
             Gizmos.DrawWireSphere(node.transform.position, 3.0f);
         }
+
+        //var skip = 75; // pas aan als je durft, maar als je dit op 1 zet zal er mogelijk iets smelten
+
+        //for (int i = 0; i < terrainVertices.Count - 1; i += skip)
+        //{        
+        //    Gizmos.DrawCube(terrainVertices[i], new Vector3(0.3f, 0.3f, 0.3f));
+        //}
     }
 
     private Dictionary<(Vector3, Vector3), object> DeterminePairsTheWackyWay(List<Vector3> nodes)

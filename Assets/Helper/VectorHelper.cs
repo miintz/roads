@@ -13,7 +13,7 @@ namespace Assets.Helper
         /// <param name="r">Float radius around <paramref name="c"/></param>
         /// <returns>Vector3 array with tangents, null if ||<paramref name="p"/> - <paramref name="c"/>|| < <paramref name="r"/></returns>
         public static Vector3[] FindTangents(Vector3 c, Vector3 p, float r = 3.1f)
-        {
+        {            
             Vector3 pc = p - c;
             float d = pc.magnitude;
 
