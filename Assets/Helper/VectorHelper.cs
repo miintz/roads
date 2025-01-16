@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System;
 
 namespace Assets.Helper
 {
@@ -12,14 +13,14 @@ namespace Assets.Helper
         /// <param name="p">Outside position.</param>
         /// <param name="r">Float radius around <paramref name="c"/></param>
         /// <returns>Vector3 array with tangents, null if ||<paramref name="p"/> - <paramref name="c"/>|| < <paramref name="r"/></returns>
-        public static Vector3[] FindTangents(Vector3 c, Vector3 p, float r = 3.1f)
+        public static Vector3[] FindTangents(Vector3 c, Vector3 p, float r = 3f, bool ignoreRadius = false)
         {            
             Vector3 pc = p - c;
             float d = pc.magnitude;
 
-            if (d < r)
+            if ((d < r) && !ignoreRadius)
             {
-                // object zit in de radius van het obstakel (kan denk ik niet omdat alles 3 is)
+                // todo: dit uitgezet, want werkt niet als het om terrein gaat. Als je huizen dicht bij elkaar hebt sure, maar voor terrein? nee
                 return null;
             }
 
@@ -52,6 +53,51 @@ namespace Assets.Helper
             }
 
             return Vector3.zero;
+        }
+
+        /// <summary>
+        /// Try to move a <see cref="Vector3"> to match the terrain
+        /// </summary>
+        /// <param name="tangentPoint"><see cref="Vector3"/> to adjust</param>
+        /// <returns>Adjusted <see cref="Vector3"/> object.</returns>
+        public static Vector3 AdjustVectorToTerrain(Vector3 tangentPoint)
+        {
+            // TODO: dit zal niet lekker werken als er een object toevallig onder / boven de tangent zit anders dan het terrein
+
+            var deathFromAbove = new Ray(new Vector3(tangentPoint.x, 10000, tangentPoint.z), Vector3.down); // werp een lijn van hoog over
+            if (Physics.Raycast(deathFromAbove, out RaycastHit hitFromAbove))
+            {
+                return hitFromAbove.point + new Vector3(0, 0.7f, 0); // dit zou het terrein moeten zijn
+            }
+
+            // niks van boven, probeer van onder (als de tangent onder het terrein zit)
+            var mears = new Ray(new Vector3(tangentPoint.x, -10000, tangentPoint.z), Vector3.up);
+            if (Physics.Raycast(mears, out RaycastHit hitFromBelow))
+            {
+                return hitFromBelow.point + Vector3.up; // dit zou het terrein moeten zijn...
+            }
+
+            return tangentPoint; // TODO: en nu? tangent helemaal buiten het terrein??
+        }
+
+        public static bool IsOnAcceptableTerrainSlope(Vector3 tangent, Vector3 obstacleCenter, float maxSlopeAngle)
+        {
+            Vector3 terrainNormal = GetTerrainNormalAtPoint(tangent); // Optional for slope validation
+            float slopeAngle = Vector3.Angle(Vector3.up, terrainNormal);
+
+            return slopeAngle <= maxSlopeAngle; // Ensure slope is acceptable
+        }
+        
+        private static Vector3 GetTerrainNormalAtPoint(Vector3 point)
+        {
+            Ray ray = new Ray(new Vector3(point.x, 1000, point.z), Vector3.down);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                return hit.normal;
+            }
+
+            Debug.LogWarning("Default valid slope used. Is this intended?");
+            return Vector3.up; // TODO: ff zien wat te doen hier, want dit zal dus technisch gezien een valide slope zijn
         }
 
         /// <summary>
