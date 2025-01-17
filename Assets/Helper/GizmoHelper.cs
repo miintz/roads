@@ -10,17 +10,17 @@ namespace Assets.Helper
         public static void DrawLineViaTangentsToTarget(RaycastHit hit, Vector3 node, Vector3 node2, Color color)
         {
             // laten we zeggen: 30 graden is ok (nog steeds tyfus steil maar voor nu prima)
-            float acceptableSlope = 30f;
+            var acceptableSlope = 30f;
 
             // zoek de tangents met een bepaalde radius voor nu, we kunnen die radius opkrikken als we geen geldige tangents vinden
             var t1acceptable = false;
             var t2acceptable = false;
 
-            Vector3 t1 = Vector3.zero;
-            Vector3 t2 = Vector3.zero;
+            var t1 = Vector3.zero;
+            var t2 = Vector3.zero;
 
-            float r = 3f;
-            int emergencyBrake = 15;
+            var r = 3f;
+            var stepOnRake = 15;
 
             while (!t1acceptable && !t2acceptable) // loop de loop tot er 1 geldig is
             {
@@ -58,8 +58,8 @@ namespace Assets.Helper
 
                 Gizmos.color = color;
 
-                emergencyBrake--;
-                if (emergencyBrake == 0)
+                stepOnRake--;
+                if (stepOnRake == 0)
                 {
                     break;
                 }
@@ -68,10 +68,12 @@ namespace Assets.Helper
                 r += 2f;
             }
 
-            if (emergencyBrake == 0)
+            if (stepOnRake == 0)
             {
                 // als we hier komen zijn er dus geen geldige tangents te vinden op deze oogabooga manier. 
-                Debug.Log("emergency rake pulled. Intended?");
+                Debug.Log("stepped on rake. Intended?");
+
+                return;
             }
 
             var tpos = Vector3.zero;
@@ -89,32 +91,22 @@ namespace Assets.Helper
                 tpos = t1acceptable ? t1 : t2;
             }
 
-            // evil ternary operator, causes stackoverflow
-            //var tpos = t1d < t2d ? t1acceptable ? t1 : t1 : t2acceptable ? t2 : t1;
             Gizmos.DrawSphere(tpos, 0.25f);
 
             var both = t1acceptable && t2acceptable;
-
-            // maar raakt de nieuwe lijn 1 van de al bestaande lijnen
-            var intersect = VectorHelper.LineIntersectsWithAny(paths, new Vector3[] { node, tpos });
-
-            //if (intersect == Vector3.zero)
-            //{
-            // pad raakt niets (geintje, dit werkt helemaal niet!
+            
             Gizmos.DrawLine(node, tpos);
             paths.Add(new Vector3[] { node, tpos });
 
             // voor dat we het laatste deel van het pad doen, bepaal of nog een obstakel is
             if (Physics.Raycast(tpos, node2 - tpos, out RaycastHit newHit))
             {
-                // voordat we verder gaan: ff checken hoe ver we van de destination af zitten. Misschien is het goed geweest?
-                // todo: dit moet ik echt even anders opzetten, dit gaat er dus van uit wanneer er GEEN raycast hit is, we bij de destination zijn. klopt natuurlijk niet :)
-
-                var distnace = Vector3.Distance(tpos, node2);
-                if (distnace < 10f) // radius van de collider
+                // als we colliden met een building zijn we er in feite gewoon
+                if (newHit.collider?.tag == "building")
                 {
                     Gizmos.color = Color.green;
                     Gizmos.DrawLine(tpos, node2); // laatste deel van het pad
+
                     paths.Add(new Vector3[] { tpos, node2 });
 
                     Gizmos.color = color;
@@ -123,48 +115,7 @@ namespace Assets.Helper
                 }
 
                 DrawLineViaTangentsToTarget(newHit, tpos, node2, color); // en nog een keer
-            }
-            else
-            {
-                Gizmos.color = Color.green;
-                Gizmos.DrawLine(tpos, node2); // laatste deel van het pad
-                paths.Add(new Vector3[] { tpos, node2 });
-
-                Gizmos.color = color;
-            }
-            //}
-            //else // dit hele stuk klopt volgens mij geen zak van, hoezo hebben we een intersect??
-            //{
-            //    // intersect? blijkbaar?            
-            //    // TODO: er dus blijkbaar een intersect hier                   
-            //    //Gizmos.color = color;
-            //    //Gizmos.DrawCube(tpos, new Vector3(1f, 1f, 1f));
-            //    //Gizmos.color = Color.yellow;
-            //    //Gizmos.DrawCube(intersect, new Vector3(1f, 1f, 1f));
-
-            //    Gizmos.color = color;
-            //    Gizmos.DrawLine(tpos, intersect);
-
-            //    // vanaf hier moeten we raycasten naar het eindpunt (toch even proberen)
-            //    if (Physics.Raycast(tpos, node2 - tpos, out hit))
-            //    {
-            //        //Gizmos.color = Color.white;
-            //        Debug.DrawRay(tpos, (node2 - tpos).normalized * 10000, Color.black, 5.0f);
-
-            //        Gizmos.color = Color.magenta;
-            //        Gizmos.DrawSphere(hit.point, 0.5f);
-            //        Gizmos.color = color;
-            //        // recursie van tpos (de laatste tangent) naar de positie van de collider van het obstakel
-            //        DrawLineViaTangentsToTarget(hit, tpos, node2, color);
-
-            //    }
-            //    else
-            //    {
-            //        // blijkbaar zijn we er al...                
-            //        Gizmos.DrawLine(tpos, node2);
-            //        paths.Add(new Vector3[] { tpos, node2 });
-            //    }               
-            //}
+            }           
         }
     }
 }

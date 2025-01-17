@@ -22,6 +22,7 @@ namespace Assets.Helper
                 float hue = (i * 360f / size) % 360; // Spread hues evenly across the circle
                 float saturation = 0.7f;            // Fixed saturation for vibrant colors
                 float lightness = 0.5f;             // Fixed lightness for medium brightness
+
                 colors.Add(HSLToRGB(hue, saturation, lightness));
             }
         }

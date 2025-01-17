@@ -2,8 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Assets.Helper;
-using static UnityEditor.Progress;
-using System;
 
 public class RoadController : MonoBehaviour
 {
@@ -104,14 +102,7 @@ public class RoadController : MonoBehaviour
         foreach (GameObject node in obstacles)
         {
             Gizmos.DrawWireSphere(node.transform.position, 3.0f);
-        }
-
-        //var skip = 75; // pas aan als je durft, maar als je dit op 1 zet zal er mogelijk iets smelten
-
-        //for (int i = 0; i < terrainVertices.Count - 1; i += skip)
-        //{        
-        //    Gizmos.DrawCube(terrainVertices[i], new Vector3(0.3f, 0.3f, 0.3f));
-        //}
+        }        
     }
 
     private Dictionary<(Vector3, Vector3), object> DeterminePairsTheWackyWay(List<Vector3> nodes)

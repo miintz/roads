@@ -606,7 +606,7 @@ Transform:
   m_GameObject: {fileID: 1086173663}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 170.76, y: 3.57, z: 276.1}
+  m_LocalPosition: {x: 173.87, y: 5.05, z: 274.71}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -689,7 +689,7 @@ GameObject:
   - component: {fileID: 1334507387}
   - component: {fileID: 1334507386}
   - component: {fileID: 1334507385}
-  m_Layer: 2
+  m_Layer: 0
   m_Name: building3 (3)
   m_TagString: building
   m_Icon: {fileID: 0}
@@ -734,7 +734,7 @@ CapsuleCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Radius: 0.5
   m_Height: 2
@@ -799,7 +799,7 @@ Transform:
   m_GameObject: {fileID: 1334507384}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1120.57, y: 350.33, z: -372.62}
+  m_LocalPosition: {x: -1117.83, y: 350.33, z: -372.62}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -928,7 +928,7 @@ Transform:
   m_GameObject: {fileID: 1422408248}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1152.62, y: 353.255, z: -267.85}
+  m_LocalPosition: {x: -1149.8, y: 353.255, z: -267.85}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
