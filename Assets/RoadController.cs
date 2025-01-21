@@ -109,7 +109,7 @@ public class RoadController : MonoBehaviour
         }
 
         // catmull-rom to the rescue
-        var smoothPath = CornerHelper.CatmullRomSpline(RoadHelper.paths.SelectMany(a => a).Distinct().ToList(), SplineResolution);
+        var smoothPath = SplineHelper.CatmullRomSpline(RoadHelper.paths.SelectMany(a => a).Distinct().ToList(), SplineResolution);
         
         Gizmos.color = Color.blue;
         for (int i = 0; i < smoothPath.Count - 1; i++)

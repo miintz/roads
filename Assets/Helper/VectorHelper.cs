@@ -5,7 +5,7 @@ namespace Assets.Helper
     public static class VectorHelper
     {
         /// <summary>
-        /// Find tangents of position <para
+        /// Find tangents of position <paramref name="c"/> in <paramref name="r"/>. 
         /// </summary>
         /// <param name="c">Position for which to find tangents around radius <paramref name="r"/>. </param>
         /// <param name="p">Outside position.</param>
@@ -17,6 +17,7 @@ namespace Assets.Helper
             float d = pc.magnitude;
 
             // normaliter willen we niet dat een tangent direct weer leid tot een collision binnen een object, maar voor terrein geld dat niet.
+            // TODO:P dit moet ik nnog even bekijken, ben hier niet helemaal blij mee
             if ((d < r) && !ignoreRadius)
             {                
                 return null;
