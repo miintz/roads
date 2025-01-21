@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Assets.Helper;
+using Unity.VisualScripting;
 
 public class RoadController : MonoBehaviour
 {
@@ -19,7 +20,9 @@ public class RoadController : MonoBehaviour
     /// Hoe hoger deze waarde, hoe meer segmenten je krijgt.
     /// </summary>
     public float SplineResolution = 10.0f;
-
+    //public bool DeformTerrainAlongPath = false;
+    public bool LetsBeSensibleHere = true;
+    public bool DrawMSTGizmos = true;
     void Start()
     {
         Buildings = GameObject.FindGameObjectsWithTag(_buildingTag).ToList();
@@ -47,11 +50,11 @@ public class RoadController : MonoBehaviour
 
         // TODO: dit stuk zou nog wel eens een behoorlijke performance bottleneck kunnen zijn
         Vector3 terrainSize = terrainData.size;
-        
+
         for (var y = 0; y < heightmapHeight; y++)
         {
             for (var x = 0; x < heightmapWidth; x++)
-            {                
+            {
                 var worldX = (x / (float)(heightmapWidth - 1)) * terrainSize.x;
                 var worldY = heights[y, x] * terrainSize.y;
                 var worldZ = (y / (float)(heightmapHeight - 1)) * terrainSize.z;
@@ -62,24 +65,46 @@ public class RoadController : MonoBehaviour
             }
         }
 
-        var buildings = GameObject.FindGameObjectsWithTag(_buildingTag).Select(o => o.transform.position).ToList();
-        foreach (var node in buildings)
+        var nodes = GameObject.FindGameObjectsWithTag(_buildingTag).Select(o => o.transform.position).ToList();
+
+        foreach (var node in nodes)
         {
             Gizmos.color = Color.green;
             Gizmos.DrawWireSphere(node, 3.0f);
         }
 
-        var pairs = DeterminePairsTheWackyWay(buildings);
+        var mst = GraphHelper.KruskalMST(nodes);
+
+        if (DrawMSTGizmos)
+        {
+            var nodeArray = nodes.ToArray();
+            Gizmos.color = Color.magenta;
+            foreach (var edge in mst)
+            {
+                Gizmos.DrawLine(nodeArray[edge.StartNode], nodeArray[edge.EndNode]);
+            }
+        }
+
+        if (LetsBeSensibleHere)
+            return;
+
+        // hier moeten dus even een stokkie steken
+        var pairs = new List<Vector3[]>();
+        foreach (var edge in mst)
+        {
+            pairs.Add(new[] { nodes[edge.StartNode], nodes[edge.EndNode] });
+        }
 
         ColorHelper.SetColors(pairs.Count);
         Gizmos.color = new Color(255, 0, 126);
 
         for (var i = 0; i < pairs.Count; i++)
         {
-            var node = pairs.Keys.Skip(i).Take(1).Single();
+            var node = pairs[i];
+            
             var color = ColorHelper.colors[i];
 
-            var line = new Vector3[] { node.Item1, node.Item2 };
+            var line = new Vector3[] { node[0], node[1] };
             RaycastHit hit;
 
             RoadHelper.paths = new List<Vector3[]>();
@@ -87,7 +112,7 @@ public class RoadController : MonoBehaviour
             if (!Physics.Raycast(line[0], line[1] - line[0], out hit))
             {
                 Gizmos.color = color;
-                Gizmos.DrawLine(node.Item1, node.Item2);
+                Gizmos.DrawLine(node[0], node[1]);
             }
             else
             {
@@ -96,7 +121,7 @@ public class RoadController : MonoBehaviour
 
                 Gizmos.color = new Color(255, 0, 126);
 
-                RoadHelper.ContinuePathViaTangentsToTarget(hit, node.Item1, node.Item2, color);
+                RoadHelper.ContinuePathViaTangentsToTarget(hit, node[0], node[1], color);
             }
         }
 
@@ -110,32 +135,12 @@ public class RoadController : MonoBehaviour
 
         // catmull-rom to the rescue
         var smoothPath = SplineHelper.CatmullRomSpline(RoadHelper.paths.SelectMany(a => a).Distinct().ToList(), SplineResolution);
-        
+
         Gizmos.color = Color.blue;
         for (int i = 0; i < smoothPath.Count - 1; i++)
         {
             Gizmos.DrawLine(smoothPath[i], smoothPath[i + 1]);
         }
-    }
-
-    private Dictionary<(Vector3, Vector3), object> DeterminePairsTheWackyWay(List<Vector3> nodes)
-    {
-        var pairs = new Dictionary<(Vector3, Vector3), object>();
-        for (int i = 0; i < nodes.Count; i++)
-        {
-            for (int j = i + 1; j < nodes.Count; j++)
-            {
-                // beetje wacky maar is goed voor nu
-                var pair = nodes[i].Equals(nodes[j])
-                    ? (nodes[i], nodes[j])
-                    : (nodes[j], nodes[i]);
-
-                pairs[pair] = null; // dan maar zo
-            }
-        }
-
-        // hey het werkt
-        return pairs;
 
     }
 }
