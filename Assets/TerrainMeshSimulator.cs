@@ -104,7 +104,7 @@ namespace Assembly_CSharp
             // Draw all vertices
             foreach (Vector3 vertex in mesh.vertices)
             {
-                Gizmos.DrawSphere(transform.TransformPoint(vertex), 0.1f);
+                //Gizmos.DrawSphere(transform.TransformPoint(vertex), 0.1f);
             }
         }     
     }

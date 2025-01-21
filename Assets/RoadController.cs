@@ -13,6 +13,13 @@ public class RoadController : MonoBehaviour
     List<GameObject> Obstacles;
     List<Vector3> TerrainVertices;
 
+    /// <summary>
+    /// Bepaald de resolutie van de Catmull-Rom spline die ervoor zorgt dat de boel een beetje smooth is.
+    /// 
+    /// Hoe hoger deze waarde, hoe meer segmenten je krijgt.
+    /// </summary>
+    public float SplineResolution = 10.0f;
+
     void Start()
     {
         Buildings = GameObject.FindGameObjectsWithTag(_buildingTag).ToList();
@@ -32,25 +39,24 @@ public class RoadController : MonoBehaviour
 
         // oogabooga
         var terrainData = GameObject.FindGameObjectsWithTag(_terrainTag).Select(a => a.GetComponent<Terrain>().terrainData).ToList().First();
-        int heightmapWidth = terrainData.heightmapResolution;
-        int heightmapHeight = terrainData.heightmapResolution;
+        var heightmapWidth = terrainData.heightmapResolution;
+        var heightmapHeight = terrainData.heightmapResolution;
 
         // Get heightmap data
-        float[,] heights = terrainData.GetHeights(0, 0, heightmapWidth, heightmapHeight);
+        var heights = terrainData.GetHeights(0, 0, heightmapWidth, heightmapHeight);
 
-        // Terrain dimensions
+        // TODO: dit stuk zou nog wel eens een behoorlijke performance bottleneck kunnen zijn
         Vector3 terrainSize = terrainData.size;
         
-        for (int y = 0; y < heightmapHeight; y++)
+        for (var y = 0; y < heightmapHeight; y++)
         {
-            for (int x = 0; x < heightmapWidth; x++)
-            {
-                // Convert heightmap coordinate to world space
-                float worldX = (x / (float)(heightmapWidth - 1)) * terrainSize.x;
-                float worldY = heights[y, x] * terrainSize.y; // Height value
-                float worldZ = (y / (float)(heightmapHeight - 1)) * terrainSize.z;
+            for (var x = 0; x < heightmapWidth; x++)
+            {                
+                var worldX = (x / (float)(heightmapWidth - 1)) * terrainSize.x;
+                var worldY = heights[y, x] * terrainSize.y;
+                var worldZ = (y / (float)(heightmapHeight - 1)) * terrainSize.z;
 
-                Vector3 vertexPosition = new Vector3(worldX, worldY, worldZ);
+                var vertexPosition = new Vector3(worldX, worldY, worldZ);
 
                 terrainVertices.Add(vertexPosition);
             }
@@ -71,28 +77,26 @@ public class RoadController : MonoBehaviour
         for (var i = 0; i < pairs.Count; i++)
         {
             var node = pairs.Keys.Skip(i).Take(1).Single();
-
             var color = ColorHelper.colors[i];
 
             var line = new Vector3[] { node.Item1, node.Item2 };
             RaycastHit hit;
 
-            GizmoHelper.paths = new List<Vector3[]>();
+            RoadHelper.paths = new List<Vector3[]>();
 
             if (!Physics.Raycast(line[0], line[1] - line[0], out hit))
             {
-
                 Gizmos.color = color;
                 Gizmos.DrawLine(node.Item1, node.Item2);
             }
             else
             {
                 Gizmos.color = Color.magenta;
-                Gizmos.DrawSphere(hit.point, 0.5f);
+                //Gizmos.DrawSphere(hit.point, 0.5f);
 
                 Gizmos.color = new Color(255, 0, 126);
 
-                GizmoHelper.DrawLineViaTangentsToTarget(hit, node.Item1, node.Item2, color);
+                RoadHelper.ContinuePathViaTangentsToTarget(hit, node.Item1, node.Item2, color);
             }
         }
 
@@ -102,7 +106,16 @@ public class RoadController : MonoBehaviour
         foreach (GameObject node in obstacles)
         {
             Gizmos.DrawWireSphere(node.transform.position, 3.0f);
-        }        
+        }
+
+        // catmull-rom to the rescue
+        var smoothPath = CornerHelper.CatmullRomSpline(RoadHelper.paths.SelectMany(a => a).Distinct().ToList(), SplineResolution);
+        
+        Gizmos.color = Color.blue;
+        for (int i = 0; i < smoothPath.Count - 1; i++)
+        {
+            Gizmos.DrawLine(smoothPath[i], smoothPath[i + 1]);
+        }
     }
 
     private Dictionary<(Vector3, Vector3), object> DeterminePairsTheWackyWay(List<Vector3> nodes)

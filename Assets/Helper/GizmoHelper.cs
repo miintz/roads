@@ -3,11 +3,11 @@ using UnityEngine;
 
 namespace Assets.Helper
 {
-    public static class GizmoHelper
+    public static class RoadHelper
     {
         public static List<Vector3[]> paths = new List<Vector3[]>();
 
-        public static void DrawLineViaTangentsToTarget(RaycastHit hit, Vector3 node, Vector3 node2, Color color)
+        public static void ContinuePathViaTangentsToTarget(RaycastHit hit, Vector3 node, Vector3 node2, Color color)
         {
             // laten we zeggen: 30 graden is ok (nog steeds tyfus steil maar voor nu prima)
             var acceptableSlope = 30f;
@@ -50,11 +50,11 @@ namespace Assets.Helper
                 t1acceptable = VectorHelper.IsOnAcceptableTerrainSlope(t1, hit.point, acceptableSlope);
                 t2acceptable = VectorHelper.IsOnAcceptableTerrainSlope(t2, hit.point, acceptableSlope);
 
-                Gizmos.color = t1acceptable ? Color.yellow : Color.red;
-                Gizmos.DrawSphere(t1, 0.2f + r / 25);
+                //Gizmos.color = t1acceptable ? Color.yellow : Color.red;
+                //Gizmos.DrawSphere(t1, 0.2f + r / 25);
 
-                Gizmos.color = t2acceptable ? Color.yellow : Color.red;
-                Gizmos.DrawSphere(t2, 0.2f + r / 25);
+                //Gizmos.color = t2acceptable ? Color.yellow : Color.red;
+                //Gizmos.DrawSphere(t2, 0.2f + r / 25);
 
                 Gizmos.color = color;
 
@@ -95,7 +95,7 @@ namespace Assets.Helper
 
             var both = t1acceptable && t2acceptable;
             
-            Gizmos.DrawLine(node, tpos);
+            //Gizmos.DrawLine(node, tpos);
             paths.Add(new Vector3[] { node, tpos });
 
             // voor dat we het laatste deel van het pad doen, bepaal of nog een obstakel is
@@ -105,7 +105,7 @@ namespace Assets.Helper
                 if (newHit.collider?.tag == "building")
                 {
                     Gizmos.color = Color.green;
-                    Gizmos.DrawLine(tpos, node2); // laatste deel van het pad
+                    //Gizmos.DrawLine(tpos, node2); // laatste deel van het pad
 
                     paths.Add(new Vector3[] { tpos, node2 });
 
@@ -114,7 +114,7 @@ namespace Assets.Helper
                     return;
                 }
 
-                DrawLineViaTangentsToTarget(newHit, tpos, node2, color); // en nog een keer
+                ContinuePathViaTangentsToTarget(newHit, tpos, node2, color); // en nog een keer
             }           
         }
     }
