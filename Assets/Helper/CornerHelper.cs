@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 public static class SplineHelper
 {
@@ -11,7 +12,11 @@ public static class SplineHelper
     /// <returns>Catmull-Rom spline in a <see cref="List{Vector3}"/>.</returns>
     public static List<Vector3> CatmullRomSpline(List<Vector3> points, float resolution = 10.0f)
     {
-        var spline = new List<Vector3>();
+        var spline = new List<Vector3>
+        {
+            points.First()
+        };
+
         for (int i = 0; i < points.Count - 3; i++)
         {
             var P0 = points[i];
@@ -32,6 +37,9 @@ public static class SplineHelper
                 spline.Add(point);
             }
         }
+
+        spline.Add(points.Last());
+
         return spline;
     }
 }
