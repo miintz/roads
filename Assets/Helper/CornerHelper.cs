@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-public static class CornerHelper
+public static class SplineHelper
 {
     /// <summary>
     /// Generate a Catmull-Rom spline using a <see cref="List{Vector3}"/> of line segments.
