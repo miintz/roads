@@ -3,6 +3,8 @@ using System.Linq;
 using UnityEngine;
 using Assets.Helper;
 using Unity.VisualScripting;
+using Assets.Algorithm.Kruskal;
+using Assets.Algorithm;
 
 public class RoadController : MonoBehaviour
 {
@@ -20,14 +22,22 @@ public class RoadController : MonoBehaviour
     /// Hoe hoger deze waarde, hoe meer segmenten je krijgt.
     /// </summary>
     public float SplineResolution = 10.0f;
+
+    // dit werkt, maar is destructief (wel interessant verder)
     //public bool DeformTerrainAlongPath = false;
     public bool LetsBeSensibleHere = true;
-    public bool DrawMSTGizmos = true;
+    public bool debugMst = true;
+
+    private Kruskal _kruskal;
+    
+
     void Start()
     {
         Buildings = GameObject.FindGameObjectsWithTag(_buildingTag).ToList();
         Obstacles = GameObject.FindGameObjectsWithTag(_obstacleTag).ToList();
         TerrainVertices = GameObject.FindGameObjectsWithTag(_terrainTag).SelectMany(g => g.GetComponent<MeshFilter>()?.sharedMesh.vertices).ToList();
+
+        _kruskal = new Kruskal(Buildings.Select(g => g.transform.position).ToList());
     }
 
     // Update is called once per frame
@@ -70,59 +80,35 @@ public class RoadController : MonoBehaviour
         foreach (var node in nodes)
         {
             Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(node, 3.0f);
+            Gizmos.DrawWireSphere(node, 2.0f);
         }
 
-        var mst = GraphHelper.KruskalMST(nodes);
+        var kruskal = new Kruskal(nodes, debugMst);
+        var mst = kruskal.GetMinimumSpanningTree();
 
-        if (DrawMSTGizmos)
-        {
-            var nodeArray = nodes.ToArray();
-            Gizmos.color = Color.magenta;
-            foreach (var edge in mst)
-            {
-                Gizmos.DrawLine(nodeArray[edge.StartNode], nodeArray[edge.EndNode]);
-            }
-        }
+        // als ik er niet gigantisch naast zit kan ik gewoon alle nodes pakken en daar pairs van maken. Eigenlijk maakt de richting dan niet uit
+        // dan pak ik gewoon allemaal enkele paden en ga ik op de MST af om de globale structuur te houden
+        // echterrrrrr de richting van is nog steeds belangrijk denk ik...
 
+        // return here for now, since the pairs are not quite right now
         if (LetsBeSensibleHere)
             return;
 
         // hier moeten dus even een stokkie steken
-        var pairs = new List<Vector3[]>();
-        foreach (var edge in mst)
-        {
-            pairs.Add(new[] { nodes[edge.StartNode], nodes[edge.EndNode] });
-        }
+        var pairs = mst.Select(a => new Vector3[] { nodes[a.EndNode], nodes[a.StartNode] }).ToList(); //.Take(2).ToList();
 
         ColorHelper.SetColors(pairs.Count);
         Gizmos.color = new Color(255, 0, 126);
 
+        List<TangentPath> pathers = new List<TangentPath>();
+
         for (var i = 0; i < pairs.Count; i++)
         {
             var node = pairs[i];
-            
+
             var color = ColorHelper.colors[i];
 
-            var line = new Vector3[] { node[0], node[1] };
-            RaycastHit hit;
-
-            RoadHelper.paths = new List<Vector3[]>();
-
-            if (!Physics.Raycast(line[0], line[1] - line[0], out hit))
-            {
-                Gizmos.color = color;
-                Gizmos.DrawLine(node[0], node[1]);
-            }
-            else
-            {
-                Gizmos.color = Color.magenta;
-                //Gizmos.DrawSphere(hit.point, 0.5f);
-
-                Gizmos.color = new Color(255, 0, 126);
-
-                RoadHelper.ContinuePathViaTangentsToTarget(hit, node[0], node[1], color);
-            }
+            pathers.Add(new TangentPath(node[0], node[1]));
         }
 
         var obstacles = GameObject.FindGameObjectsWithTag(_obstacleTag).ToList();
@@ -134,13 +120,25 @@ public class RoadController : MonoBehaviour
         }
 
         // catmull-rom to the rescue
-        var smoothPath = SplineHelper.CatmullRomSpline(RoadHelper.paths.SelectMany(a => a).Distinct().ToList(), SplineResolution);
+        // doen we voor elk """segment"""
+        List<CatmullRom> _splines = new List<CatmullRom>();
 
-        Gizmos.color = Color.blue;
-        for (int i = 0; i < smoothPath.Count - 1; i++)
-        {
-            Gizmos.DrawLine(smoothPath[i], smoothPath[i + 1]);
+        foreach (var pather in pathers)
+        {            
+            var catmullrom = new CatmullRom(pather.GetPath());
+
+            _splines.Add(catmullrom);
         }
 
+        var smoothPaths = _splines.Select(s => s.GetSpline());
+
+        Gizmos.color = Color.blue;
+        foreach (var smoothPath in smoothPaths)
+        {
+            for (int i = 0; i < smoothPath.Count - 1; i++)
+            {
+                Gizmos.DrawLine(smoothPath[i], smoothPath[i + 1]);
+            }
+        }
     }
 }

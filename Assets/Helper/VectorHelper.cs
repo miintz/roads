@@ -38,59 +38,6 @@ namespace Assets.Helper
             var t2 = c + tangentDirection2;
 
             return new [] { t1, t2 };
-        }   
-
-        /// <summary>
-        /// Try to move a <see cref="Vector3"> to match the terrain
-        /// </summary>
-        /// <param name="tangentPoint"><see cref="Vector3"/> to adjust</param>
-        /// <returns>Adjusted <see cref="Vector3"/> object.</returns>
-        public static Vector3 AdjustVectorToTerrain(Vector3 tangentPoint)
-        {
-            // TODO: dit zal niet lekker werken als er een object toevallig onder / boven de tangent zit anders dan het terrein
-
-            var deathFromAbove = new Ray(new Vector3(tangentPoint.x, 10000, tangentPoint.z), Vector3.down); // werp een lijn van hoog over
-            if (Physics.Raycast(deathFromAbove, out RaycastHit hitFromAbove))
-            {
-                return hitFromAbove.point + new Vector3(0, 0.7f, 0); // dit zou het terrein moeten zijn
-            }
-
-            // niks van boven, probeer van onder (als de tangent onder het terrein zit)
-            var mears = new Ray(new Vector3(tangentPoint.x, -10000, tangentPoint.z), Vector3.up);
-            if (Physics.Raycast(mears, out RaycastHit hitFromBelow))
-            {
-                return hitFromBelow.point + Vector3.up; // dit zou het terrein moeten zijn...
-            }
-
-            return tangentPoint; // TODO: en nu? tangent helemaal buiten het terrein??
-        }
-
-        /// <summary>
-        /// Determine if the slope <paramref name="tangent"/> is on is deemed acceptable by <paramref name="maxSlopeAngle"/>.
-        /// </summary>
-        /// <param name="tangent"></param>
-        /// <param name="obstacleCenter"></param>
-        /// <param name="maxSlopeAngle"></param>
-        /// <returns>Return true if the slope the tangent is on is deemed acceptaple.</returns>
-        public static bool IsOnAcceptableTerrainSlope(Vector3 tangent, Vector3 obstacleCenter, float maxSlopeAngle)
-        {
-            // terrain normal = the angle.
-            Vector3 terrainNormal = GetTerrainNormalAtPoint(tangent);
-            float slopeAngle = Vector3.Angle(Vector3.up, terrainNormal);
-
-            return slopeAngle <= maxSlopeAngle; 
-        }
-        
-        private static Vector3 GetTerrainNormalAtPoint(Vector3 point)
-        {
-            var ray = new Ray(new Vector3(point.x, 1000, point.z), Vector3.down);
-            if (Physics.Raycast(ray, out RaycastHit hit))
-            {
-                return hit.normal;
-            }
-
-            Debug.LogWarning("Default valid slope used. Intended?");
-            return Vector3.up; // TODO: ff zien wat te doen hier, want dit zal dus technisch gezien een valide slope zijn
-        }
+        }    
     }
 }
