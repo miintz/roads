@@ -7,6 +7,7 @@ namespace Assets.Algorithm
     public class CatmullRom
     {
         private List<Vector3> _points { get; set; }
+        private bool _valid => _points.Count > 0;
 
         public CatmullRom(List<Vector3> points)
         {
@@ -22,6 +23,12 @@ namespace Assets.Algorithm
         /// <returns>Catmull-Rom spline in a <see cref="List{Vector3}"/>.</returns>
         public List<Vector3> GetSpline(float resolution = 10.0f)
         {
+            if (!_valid)
+            {
+                Debug.LogWarning("No points provided to spline.");
+                return new List<Vector3>();
+            }
+
             var spline = new List<Vector3>
             {
                 _points.First()
