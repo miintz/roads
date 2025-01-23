@@ -71,8 +71,12 @@ namespace Assets.Algorithm
                 var tangents = VectorHelper.FindTangents(hit, newOrigin, r);
                 if (tangents == null)
                 {
-                    Gizmos.color = Color.white;
-                    Gizmos.DrawSphere(hit, 0.5f);
+                    if (_debug)
+                    {
+                        // wat is een no tangents color
+                        Gizmos.color = Color.red;
+                        Gizmos.DrawSphere(hit, 0.5f);
+                    }
 
                     // probeer nog eens maar negeer nu de radius
                     tangents = VectorHelper.FindTangents(hit, newOrigin, r, true);
@@ -133,6 +137,14 @@ namespace Assets.Algorithm
 
             // voeg de tangent (in feite onze nieuwe origin) toe aan segments
             segments.Add(tpos);
+
+            if (_debug)
+            {
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawSphere(tpos, 0.5f);
+                Gizmos.color = Color.green;
+                Gizmos.DrawSphere(newOrigin, 0.5f);
+            }
 
             // voor dat we het laatste deel van het pad doen, bepaal of nog een obstakel is
             if (Physics.Raycast(tpos, _destination - tpos, out RaycastHit newHit))

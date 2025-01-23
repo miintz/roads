@@ -27,6 +27,7 @@ public class RoadController : MonoBehaviour
     
     public bool drawMstGizmos = true;
     public bool drawSplineGizmos = true;
+    public bool debugTangents = false;
 
     private Kruskal _kruskal;
 
@@ -58,7 +59,7 @@ public class RoadController : MonoBehaviour
         var heights = terrainData.GetHeights(0, 0, heightmapWidth, heightmapHeight);
 
         // TODO: dit stuk zou nog wel eens een behoorlijke performance bottleneck kunnen zijn
-        Vector3 terrainSize = terrainData.size;
+        var terrainSize = terrainData.size;
 
         for (var y = 0; y < heightmapHeight; y++)
         {
@@ -96,10 +97,9 @@ public class RoadController : MonoBehaviour
         for (var i = 0; i < pairs.Count; i++)
         {
             var node = pairs[i];
-
             var color = ColorHelper.colors[i];
 
-            pathers.Add(new TangentPath(node[0], node[1]));
+            pathers.Add(new TangentPath(node[0], node[1], debug: debugTangents));
         }
 
         var obstacles = GameObject.FindGameObjectsWithTag(_obstacleTag).ToList();
