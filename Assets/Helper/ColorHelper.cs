@@ -19,9 +19,9 @@ namespace Assets.Helper
  
             for (int i = 0; i < size; i++)
             {
-                float hue = (i * 360f / size) % 360; // Spread hues evenly across the circle
-                float saturation = 0.7f;            // Fixed saturation for vibrant colors
-                float lightness = 0.5f;             // Fixed lightness for medium brightness
+                var hue = (i * 360f / size) % 360; // Spread hues evenly across the circle
+                var saturation = 0.7f;            // Fixed saturation for vibrant colors
+                var lightness = 0.5f;             // Fixed lightness for medium brightness
 
                 colors.Add(HSLToRGB(hue, saturation, lightness));
             }
@@ -36,11 +36,13 @@ namespace Assets.Helper
         /// <returns>RGB Color.</returns>
         private static Color HSLToRGB(float hue, float saturation, float lightness)
         {
-            float c = (1 - Math.Abs(2 * lightness - 1)) * saturation;
-            float x = c * (1 - Math.Abs((hue / 60f) % 2 - 1));
-            float m = lightness - c / 2;
+            var c = (1 - Math.Abs(2 * lightness - 1)) * saturation;
+            var x = c * (1 - Math.Abs((hue / 60f) % 2 - 1));
+            var m = lightness - c / 2;
 
-            float r = 0, g = 0, b = 0;
+            var r = 0f;
+            var g = 0f; 
+            var b = 0f;
 
             if (hue < 60) { r = c; g = x; b = 0; }
             else if (hue < 120) { r = x; g = c; b = 0; }

@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Assets.Helper;
-using Unity.VisualScripting;
 using Assets.Algorithm.Kruskal;
 using Assets.Algorithm;
 
@@ -25,11 +24,11 @@ public class RoadController : MonoBehaviour
 
     // dit werkt, maar is destructief (wel interessant verder)
     //public bool DeformTerrainAlongPath = false;
-    public bool LetsBeSensibleHere = true;
-    public bool debugMst = true;
+    
+    public bool drawMstGizmos = true;
+    public bool drawSplineGizmos = true;
 
     private Kruskal _kruskal;
-    
 
     void Start()
     {
@@ -83,19 +82,11 @@ public class RoadController : MonoBehaviour
             Gizmos.DrawWireSphere(node, 2.0f);
         }
 
-        var kruskal = new Kruskal(nodes, debugMst);
+        var kruskal = new Kruskal(nodes, drawMstGizmos);
         var mst = kruskal.GetMinimumSpanningTree();
 
-        // als ik er niet gigantisch naast zit kan ik gewoon alle nodes pakken en daar pairs van maken. Eigenlijk maakt de richting dan niet uit
-        // dan pak ik gewoon allemaal enkele paden en ga ik op de MST af om de globale structuur te houden
-        // echterrrrrr de richting van is nog steeds belangrijk denk ik...
-
-        // return here for now, since the pairs are not quite right now
-        if (LetsBeSensibleHere)
-            return;
-
-        // hier moeten dus even een stokkie steken
-        var pairs = mst.Select(a => new Vector3[] { nodes[a.EndNode], nodes[a.StartNode] }).ToList(); //.Take(2).ToList();
+        // is het wacky: ja. Maar het zou moeten werken (?)
+        var pairs = mst.Select(a => new Vector3[] { nodes[a.EndNode], nodes[a.StartNode] }).ToList();
 
         ColorHelper.SetColors(pairs.Count);
         Gizmos.color = new Color(255, 0, 126);
@@ -131,6 +122,9 @@ public class RoadController : MonoBehaviour
         }
 
         var smoothPaths = _splines.Select(s => s.GetSpline());
+
+        if (!drawSplineGizmos)
+            return;
 
         Gizmos.color = Color.blue;
         foreach (var smoothPath in smoothPaths)

@@ -11,13 +11,17 @@ namespace Assets.Algorithm
         private Vector3 _origin;
         private bool _debug;
         private string _objectTag;
+        private float _acceptableTerrainSlope;
+        private int _rakeLimit;
 
-        public TangentPath(Vector3 origin, Vector3 destination, string objectTag = "building", bool debug = false)
+        public TangentPath(Vector3 origin, Vector3 destination, string objectTag = "building", bool debug = false, float acceptableTerrainSlope = 30f, int rakeLimit = 15)
         {
             _origin = origin;
             _destination = destination;
             _debug = debug;
             _objectTag = objectTag;
+            _acceptableTerrainSlope = acceptableTerrainSlope;
+            _rakeLimit = rakeLimit;
         }
 
         public List<Vector3> GetPath()
@@ -52,9 +56,6 @@ namespace Assets.Algorithm
 
         private List<Vector3> GetPathSegments(Vector3 hit, Vector3 newOrigin, List<Vector3> segments)
         {
-            // laten we zeggen: 30 graden is ok (nog steeds tyfus steil maar voor nu prima)
-            var acceptableSlope = 30f;
-
             // zoek de tangents met een bepaalde radius voor nu, we kunnen die radius opkrikken als we geen geldige tangents vinden
             var t1acceptable = false;
             var t2acceptable = false;
@@ -63,7 +64,7 @@ namespace Assets.Algorithm
             var t2 = Vector3.zero;
 
             var r = 3f;
-            var stepOnRake = 15;
+            var stepOnRake = _rakeLimit;
 
             while (!t1acceptable && !t2acceptable) // loop de loop tot er 1 geldig is
             {
@@ -93,8 +94,8 @@ namespace Assets.Algorithm
                 t2 = terrainHelper.AdjustVectorToTerrain(t2);
 
                 // nu zullen de tangents denk ik goed liggen (raycast op terrain + 1 omhoog voor de vorm), maar hoe is de slope? Normal checken dus denk ik?
-                t1acceptable = terrainHelper.IsOnAcceptableTerrainSlope(t1, hit, acceptableSlope);
-                t2acceptable = terrainHelper.IsOnAcceptableTerrainSlope(t2, hit, acceptableSlope);
+                t1acceptable = terrainHelper.IsOnAcceptableTerrainSlope(t1, hit, _acceptableTerrainSlope);
+                t2acceptable = terrainHelper.IsOnAcceptableTerrainSlope(t2, hit, _acceptableTerrainSlope);
 
                 stepOnRake--;
                 if (stepOnRake == 0)

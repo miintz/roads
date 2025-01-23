@@ -14,10 +14,10 @@ namespace Assets.Helper
         public static Vector3[] FindTangents(Vector3 c, Vector3 p, float r = 3f, bool ignoreRadius = false)
         {            
             var pc = p - c;
-            float d = pc.magnitude;
+            var d = pc.magnitude;
 
             // normaliter willen we niet dat een tangent direct weer leid tot een collision binnen een object, maar voor terrein geld dat niet.
-            // TODO:P dit moet ik nnog even bekijken, ben hier niet helemaal blij mee
+            // TODO: dit moet ik nnog even bekijken, ben hier niet helemaal blij mee
             if ((d < r) && !ignoreRadius)
             {                
                 return null;
