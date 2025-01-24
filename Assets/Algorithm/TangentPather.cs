@@ -10,15 +10,19 @@ namespace Assets.Algorithm
         private Vector3 _destination;
         private Vector3 _origin;
         private bool _debug;
+        private bool _debugRaycast;
+        private int _debugRaycastLength;
         private string _objectTag;
         private float _acceptableTerrainSlope;
         private int _rakeLimit;
 
-        public TangentPath(Vector3 origin, Vector3 destination, string objectTag = "building", bool debug = false, float acceptableTerrainSlope = 30f, int rakeLimit = 15)
+        public TangentPath(Vector3 origin, Vector3 destination, string objectTag = "building", bool debug = false, bool debugRaycast = false, int debugRaycastLength = 1000, float acceptableTerrainSlope = 30f, int rakeLimit = 15)
         {
             _origin = origin;
             _destination = destination;
             _debug = debug;
+            _debugRaycast = debugRaycast;
+            _debugRaycastLength = debugRaycastLength;
             _objectTag = objectTag;
             _acceptableTerrainSlope = acceptableTerrainSlope;
             _rakeLimit = rakeLimit;
@@ -147,6 +151,13 @@ namespace Assets.Algorithm
             }
 
             // voor dat we het laatste deel van het pad doen, bepaal of nog een obstakel is
+
+            //if (_debugRaycast)
+            //{
+            //    Gizmos.color = Color.red;
+            //    Gizmos.DrawLine(tpos, (_destination - tpos));
+            //}
+
             if (Physics.Raycast(tpos, _destination - tpos, out RaycastHit newHit))
             {
                 // als we colliden met de geconfigureerde tag zijn we er in feite gewoon

@@ -4,6 +4,7 @@ using UnityEngine;
 using Assets.Helper;
 using Assets.Algorithm.Kruskal;
 using Assets.Algorithm;
+using Unity.VisualScripting;
 
 public class RoadController : MonoBehaviour
 {
@@ -26,8 +27,11 @@ public class RoadController : MonoBehaviour
     //public bool DeformTerrainAlongPath = false;
     
     public bool drawMstGizmos = true;
-    public bool drawSplineGizmos = true;
+    public bool drawSplineGizmos = false;
+    public bool drawPathGizmos = false;
     public bool debugTangents = false;
+    public bool debugRaycast = false;
+    public int debugRaycastLength = 1000;
 
     private Kruskal _kruskal;
 
@@ -99,7 +103,7 @@ public class RoadController : MonoBehaviour
             var node = pairs[i];
             var color = ColorHelper.colors[i];
 
-            pathers.Add(new TangentPath(node[0], node[1], debug: debugTangents));
+            pathers.Add(new TangentPath(node[0], node[1], debug: debugTangents, debugRaycast: debugRaycast, debugRaycastLength: debugRaycastLength));
         }
 
         var obstacles = GameObject.FindGameObjectsWithTag(_obstacleTag).ToList();
@@ -115,8 +119,19 @@ public class RoadController : MonoBehaviour
         List<CatmullRom> _splines = new List<CatmullRom>();
 
         foreach (var pather in pathers)
-        {            
-            var catmullrom = new CatmullRom(pather.GetPath());
+        {
+            var basicPath = pather.GetPath();
+
+            if (drawPathGizmos)
+            {
+                for (var i = 0; i < basicPath.Count - 1; i++)
+                {
+                    Gizmos.color = Color.red;
+                    Gizmos.DrawLine(basicPath[i], basicPath[i + 1]);
+                }
+            }
+
+            var catmullrom = new CatmullRom(basicPath);
 
             _splines.Add(catmullrom);
         }
@@ -126,12 +141,15 @@ public class RoadController : MonoBehaviour
         if (!drawSplineGizmos)
             return;
 
-        Gizmos.color = Color.blue;
-        foreach (var smoothPath in smoothPaths)
+        if (drawSplineGizmos)
         {
-            for (int i = 0; i < smoothPath.Count - 1; i++)
+            Gizmos.color = Color.blue;
+            foreach (var smoothPath in smoothPaths)
             {
-                Gizmos.DrawLine(smoothPath[i], smoothPath[i + 1]);
+                for (int i = 0; i < smoothPath.Count - 1; i++)
+                {
+                    Gizmos.DrawLine(smoothPath[i], smoothPath[i + 1]);
+                }
             }
         }
     }
