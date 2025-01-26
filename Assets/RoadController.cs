@@ -27,8 +27,13 @@ public class RoadController : MonoBehaviour
     [Range(0.75f, 2.0f)]
     public float maxPathHeightDifferential = 1.0f;
 
-    public bool drawSplineGizmos = true;
+    [Range(7.5f, 45f)]
+    public float acceptableTerrainSlope = 30f;
 
+    public int rakeLimit = 15;
+
+    public bool drawSplineGizmos = true;
+    
     /// <summary>
     /// Bepaald de resolutie van de Catmull-Rom spline die ervoor zorgt dat de boel een beetje smooth is.
     /// 
@@ -125,9 +130,10 @@ public class RoadController : MonoBehaviour
                 node[0], 
                 node[1], 
                 nodeLabels,
-
+                rakeLimit: rakeLimit,
                 debug: debugTangents, 
                 checkTerrainGradientWhenPathing: checkTerrainGradienWhenPathfinding,
+                acceptableTerrainSlope: acceptableTerrainSlope,
                 maxPathHeightDifferential: maxPathHeightDifferential));
         }
 

@@ -19,7 +19,7 @@ namespace Assets.Algorithm
         private int _rakeLimit;
         private int _raycastValidMaxSamples = 20;
 
-        private float _acceptableTerrainSlope;
+        private float _acceptableTerrainSlope = 30f;
         private float _raycastValidMaxHeight = 1.0f;
 
         // TODO: ik moet hier niet de tag mee te geven, maar het object waar ik naar toe wil.
