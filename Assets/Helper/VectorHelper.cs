@@ -17,7 +17,7 @@ namespace Assets.Helper
             var d = pc.magnitude;
 
             // normaliter willen we niet dat een tangent direct weer leid tot een collision binnen een object, maar voor terrein geld dat niet.
-            // TODO: dit moet ik nnog even bekijken, ben hier niet helemaal blij mee
+            // TODO: dit moet ik nog even bekijken, ben hier niet helemaal blij mee
             if ((d < r) && !ignoreRadius)
             {                
                 return null;

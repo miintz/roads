@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace Assets.Algorithm
 {
@@ -11,25 +10,27 @@ namespace Assets.Algorithm
     {
         private Vector3 _destination;
         private Vector3 _origin;
-        private bool _debug;
-        private bool _debugRaycast;
-        private int _debugRaycastLength;
-        private string _objectTag;
-        private float _acceptableTerrainSlope;
-        private int _rakeLimit;
-        private bool _checkTerrainGradientWhenPathing;
+        
+        private List<string> _nodeTags;
 
-        private float _raycastValidMaxHeight = 1.0f;
+        private bool _debug;
+        private bool _checkTerrainGradientWhenPathing;
+        
+        private int _rakeLimit;
         private int _raycastValidMaxSamples = 20;
 
-        public TangentPathfinder(Vector3 origin, Vector3 destination, string objectTag = "building", bool debug = false, bool debugRaycast = false, int debugRaycastLength = 1000, float acceptableTerrainSlope = 30f, int rakeLimit = 15, bool checkTerrainGradientWhenPathing = false, float maxPathHeightDifferential = 1.0f)
+        private float _acceptableTerrainSlope;
+        private float _raycastValidMaxHeight = 1.0f;
+
+        // TODO: ik moet hier niet de tag mee te geven, maar het object waar ik naar toe wil.
+        //       nu moet ik werken met een node pair. Denk dat het niet heel veel uitmaakt,
+        //       maar op z'n minst is het semantisch handig om niet met de tag te werken
+        public TangentPathfinder(Vector3 origin, Vector3 destination, List<string> nodeTags, bool debug = false, float acceptableTerrainSlope = 30f, int rakeLimit = 15, bool checkTerrainGradientWhenPathing = false, float maxPathHeightDifferential = 1.0f)
         {
             _origin = origin;
             _destination = destination;
             _debug = debug;
-            _debugRaycast = debugRaycast;
-            _debugRaycastLength = debugRaycastLength;
-            _objectTag = objectTag;
+            _nodeTags = nodeTags;
             _acceptableTerrainSlope = acceptableTerrainSlope;
             _rakeLimit = rakeLimit;
             _checkTerrainGradientWhenPathing = checkTerrainGradientWhenPathing;
@@ -75,7 +76,7 @@ namespace Assets.Algorithm
                 }
 
                 // we checken ook of de hit position hetzelfde is als de destination. De MST zou moeten voorkomen dat dit nodig is maar hee *haalt schouders op*
-                if (hit.collider.tag.Equals(_objectTag) && point == _destination)
+                if (_nodeTags.Contains(hit.collider.tag) && point == _destination)
                 {
                     return segments;
                 }
@@ -203,7 +204,7 @@ namespace Assets.Algorithm
                 }
 
                 // als we colliden met de geconfigureerde tag zijn we er in feite gewoon
-                if (newHit.collider?.tag == _objectTag && Vector3.Distance(point, _destination) < 5.0f)
+                if (_nodeTags.Contains(newHit.collider?.tag) && Vector3.Distance(point, _destination) < 5.0f)
                 {
                     // we kunnen de destination nu zien liggen, wil niet zeggen dat we er al zijn
                     // maar we kunnen ook niet op positie controleren, want we hebben het over de rigidbody (destionation) en een raycasthit op de collider.

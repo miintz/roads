@@ -4,32 +4,30 @@ using UnityEngine;
 using Assets.Helper;
 using Assets.Algorithm.Kruskal;
 using Assets.Algorithm;
-using Unity.VisualScripting;
 
 public class RoadController : MonoBehaviour
 {
-    const string _buildingTag = "building";
-    const string _obstacleTag = "obstacle";
-    const string _terrainTag = "terrain";
-
     List<GameObject> Buildings;
     List<GameObject> Obstacles;
-    List<Vector3> TerrainVertices;
 
     // dit werkt, maar is destructief (wel interessant verder)
     //public bool DeformTerrainAlongPath = false;
-    
-    public bool drawMstGizmos = true;
+
+    public List<string> nodeLabels = new List<string> { "building" };
+    public List<string> obstacleLabels = new List<string> { "obstacle" };
+    //public List<string> terrainLabel = "terrain";
+
+    public bool drawMSTGizmos = false;
     public bool drawTangentPathGizmos = false;
     public bool debugTangents = false;
 
-    public bool checkTerrainGradienWhenPathfinding = false;
+    public bool checkTerrainGradienWhenPathfinding = true;
 
     // 0.75 seems to be the limit before the tangent pathfinder runs into issues with slope gradient (i think)
     [Range(0.75f, 2.0f)]
     public float maxPathHeightDifferential = 1.0f;
 
-    public bool drawSplineGizmos = false;
+    public bool drawSplineGizmos = true;
 
     /// <summary>
     /// Bepaald de resolutie van de Catmull-Rom spline die ervoor zorgt dat de boel een beetje smooth is.
@@ -47,9 +45,9 @@ public class RoadController : MonoBehaviour
 
     void Start()
     {
-        Buildings = GameObject.FindGameObjectsWithTag(_buildingTag).ToList();
-        Obstacles = GameObject.FindGameObjectsWithTag(_obstacleTag).ToList();
-        TerrainVertices = GameObject.FindGameObjectsWithTag(_terrainTag).SelectMany(g => g.GetComponent<MeshFilter>()?.sharedMesh.vertices).ToList();
+        Buildings = nodeLabels.SelectMany(l => GameObject.FindGameObjectsWithTag(l)).ToList();
+        Obstacles = obstacleLabels.SelectMany(l => GameObject.FindGameObjectsWithTag(l)).ToList();
+        //TerrainVertices = GameObject.FindGameObjectsWithTag(_terrainTag).SelectMany(g => g.GetComponent<MeshFilter>()?.sharedMesh.vertices).ToList();
 
         _kruskal = new Kruskal(Buildings.Select(g => g.transform.position).ToList());
     }
@@ -57,39 +55,44 @@ public class RoadController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+        // TODO: hier moet ik de boel nu gaan inbakken
     }
 
     private void OnDrawGizmos()
     {
-        var terrainVertices = new List<Vector3>();
+        #region TODO: dit hele stuk moet ik later even herzien, kan ik gebruiken voor terrain deformation
+        // TODO: dit hele stuk moet ik later even herzien, kan ik gebruiken voor terrain deformation
 
-        // oogabooga
-        var terrainData = GameObject.FindGameObjectsWithTag(_terrainTag).Select(a => a.GetComponent<Terrain>().terrainData).ToList().First();
-        var heightmapWidth = terrainData.heightmapResolution;
-        var heightmapHeight = terrainData.heightmapResolution;
+        //var terrainVertices = new List<Vector3>();
 
-        // Get heightmap data
-        var heights = terrainData.GetHeights(0, 0, heightmapWidth, heightmapHeight);
+        //// oogabooga
+        //var terrainData = GameObject.FindGameObjectsWithTag(_terrainTag).Select(a => a.GetComponent<Terrain>().terrainData).ToList().First();
+        //var heightmapWidth = terrainData.heightmapResolution;
+        //var heightmapHeight = terrainData.heightmapResolution;
 
-        // TODO: dit stuk zou nog wel eens een behoorlijke performance bottleneck kunnen zijn, maar dat zien we vanzelf :)
-        var terrainSize = terrainData.size;
+        //// Get heightmap data
+        //var heights = terrainData.GetHeights(0, 0, heightmapWidth, heightmapHeight);
 
-        for (var y = 0; y < heightmapHeight; y++)
-        {
-            for (var x = 0; x < heightmapWidth; x++)
-            {
-                var worldX = (x / (float)(heightmapWidth - 1)) * terrainSize.x;
-                var worldY = heights[y, x] * terrainSize.y;
-                var worldZ = (y / (float)(heightmapHeight - 1)) * terrainSize.z;
+        //// TODO: dit stuk zou nog wel eens een behoorlijke performance bottleneck kunnen zijn, maar dat zien we vanzelf :)
+        //var terrainSize = terrainData.size;
 
-                var vertexPosition = new Vector3(worldX, worldY, worldZ);
+        //for (var y = 0; y < heightmapHeight; y++)
+        //{
+        //    for (var x = 0; x < heightmapWidth; x++)
+        //    {
+        //        var worldX = (x / heightmapWidth - 1) * terrainSize.x;
+        //        var worldY = heights[y, x] * terrainSize.y;
+        //        var worldZ = (y / heightmapHeight - 1) * terrainSize.z;
 
-                terrainVertices.Add(vertexPosition);
-            }
-        }
+        //        var vertexPosition = new Vector3(worldX, worldY, worldZ);
 
-        var nodes = GameObject.FindGameObjectsWithTag(_buildingTag).Select(o => o.transform.position).ToList();
+        //        terrainVertices.Add(vertexPosition);
+        //    }
+        //}
+
+        #endregion
+
+        var nodes = nodeLabels.SelectMany(l => GameObject.FindGameObjectsWithTag(l).ToList()).Select(o => o.transform.position).ToList();
 
         foreach (var node in nodes)
         {
@@ -97,33 +100,38 @@ public class RoadController : MonoBehaviour
             Gizmos.DrawWireSphere(node, 2.0f);
         }
 
-        var kruskal = new Kruskal(nodes, drawMstGizmos);
+        var kruskal = new Kruskal(nodes, drawMSTGizmos);
         var mst = kruskal.GetMinimumSpanningTree();
 
-        // is het wacky: ja. Maar het zou moeten werken (?)
-        var pairs = mst.Select(a => new Vector3[] { nodes[a.EndNode], nodes[a.StartNode] }).ToList();
+        // dit zou moeten werken... door de MST zou als het goed is de richting niet uit moeten maken.
+        var pairs = mst.Select(a => new Vector3[] 
+        { 
+            nodes[a.EndNode], 
+            nodes[a.StartNode] 
+        }).ToList();
 
         ColorHelper.SetColors(pairs.Count);
         Gizmos.color = new Color(255, 0, 126);
 
-        List<TangentPathfinder> pathers = new List<TangentPathfinder>();
+        var pathfinders = new List<TangentPathfinder>();
 
         for (var i = 0; i < pairs.Count; i++)
         {
             var node = pairs[i];
             var color = ColorHelper.colors[i];
 
-            pathers.Add(new TangentPathfinder(
+            // initialize pathfinder
+            pathfinders.Add(new TangentPathfinder(
                 node[0], 
                 node[1], 
+                nodeLabels,
+
                 debug: debugTangents, 
-                debugRaycast: debugRaycast, 
-                debugRaycastLength: debugRaycastLength, 
                 checkTerrainGradientWhenPathing: checkTerrainGradienWhenPathfinding,
                 maxPathHeightDifferential: maxPathHeightDifferential));
         }
 
-        var obstacles = GameObject.FindGameObjectsWithTag(_obstacleTag).ToList();
+        var obstacles = nodeLabels.SelectMany(l => GameObject.FindGameObjectsWithTag(l).ToList()).ToList();
 
         Gizmos.color = Color.red;
         foreach (GameObject node in obstacles)
@@ -135,7 +143,7 @@ public class RoadController : MonoBehaviour
         // doen we voor elk """segment"""
         List<CatmullRom> _splines = new List<CatmullRom>();
 
-        foreach (var pather in pathers)
+        foreach (var pather in pathfinders)
         {
             var basicPath = pather.GetPath();
 
@@ -153,7 +161,7 @@ public class RoadController : MonoBehaviour
             _splines.Add(catmullrom);
         }
 
-        var smoothPaths = _splines.Select(s => s.GetSpline());
+        var smoothPaths = _splines.Select(s => s.GetSpline(SplineResolution));
 
         if (!drawSplineGizmos)
             return;
