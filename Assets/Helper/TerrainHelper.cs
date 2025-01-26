@@ -105,6 +105,8 @@ public class TerrainHelper
             return hitFromBelow.point + Vector3.up; // dit zou het terrein moeten zijn...
         }
 
+        Debug.LogWarning("wait what now");
+
         return tangentPoint; // TODO: en nu? tangent helemaal buiten het terrein??
     }
 

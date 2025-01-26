@@ -1,5 +1,4 @@
-﻿
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -18,15 +17,15 @@ namespace Assets.Algorithm.Kruskal
 
         public List<KruskalEdge> GetMinimumSpanningTree()
         {
-            int n = _nodes.Count();
-            List<KruskalEdge> edges = new List<KruskalEdge>();
+            var n = _nodes.Count();
+            var edges = new List<KruskalEdge>();
 
             // Step 1: Create edges with their weights (distances)
             for (int i = 0; i < n; i++)
             {
-                for (int j = i + 1; j < n; j++)
+                for (var j = i + 1; j < n; j++)
                 {
-                    float distance = EuclideanDistance(_nodes[i], _nodes[j]);
+                    var distance = Vector3.Distance(_nodes[i], _nodes[j]);
                     edges.Add(new KruskalEdge(i, j, distance));
                 }
             }
@@ -61,12 +60,7 @@ namespace Assets.Algorithm.Kruskal
             }
 
             return mst;
-        }
-
-        private float EuclideanDistance(Vector3 p1, Vector3 p2)
-        {
-            return Vector3.Distance(p1, p2);  // Direct use of Unity's built-in distance function
-        }
+        }  
 
     }
 }

@@ -16,21 +16,31 @@ public class RoadController : MonoBehaviour
     List<GameObject> Obstacles;
     List<Vector3> TerrainVertices;
 
-    /// <summary>
-    /// Bepaald de resolutie van de Catmull-Rom spline die ervoor zorgt dat de boel een beetje smooth is.
-    /// 
-    /// Hoe hoger deze waarde, hoe meer segmenten je krijgt.
-    /// </summary>
-    public float SplineResolution = 10.0f;
-
     // dit werkt, maar is destructief (wel interessant verder)
     //public bool DeformTerrainAlongPath = false;
     
     public bool drawMstGizmos = true;
-    public bool drawSplineGizmos = false;
-    public bool drawPathGizmos = false;
+    public bool drawTangentPathGizmos = false;
     public bool debugTangents = false;
+
+    public bool checkTerrainGradienWhenPathfinding = false;
+
+    // 0.75 seems to be the limit before the tangent pathfinder runs into issues with slope gradient (i think)
+    [Range(0.75f, 2.0f)]
+    public float maxPathHeightDifferential = 1.0f;
+
+    public bool drawSplineGizmos = false;
+
+    /// <summary>
+    /// Bepaald de resolutie van de Catmull-Rom spline die ervoor zorgt dat de boel een beetje smooth is.
+    /// 
+    /// Hoe hoger deze waarde, hoe meer segmenten je krijgt. 10 lijkt goed te werken
+    /// </summary>
+    public float SplineResolution = 10.0f;
+
     public bool debugRaycast = false;
+
+    // todo: dit werkt niet, als je dit vermedigvuldigd met een normal, die optelt bij een start vector3 roteer je de vector3 op basis van dit nummer
     public int debugRaycastLength = 1000;
 
     private Kruskal _kruskal;
@@ -62,7 +72,7 @@ public class RoadController : MonoBehaviour
         // Get heightmap data
         var heights = terrainData.GetHeights(0, 0, heightmapWidth, heightmapHeight);
 
-        // TODO: dit stuk zou nog wel eens een behoorlijke performance bottleneck kunnen zijn
+        // TODO: dit stuk zou nog wel eens een behoorlijke performance bottleneck kunnen zijn, maar dat zien we vanzelf :)
         var terrainSize = terrainData.size;
 
         for (var y = 0; y < heightmapHeight; y++)
@@ -96,14 +106,21 @@ public class RoadController : MonoBehaviour
         ColorHelper.SetColors(pairs.Count);
         Gizmos.color = new Color(255, 0, 126);
 
-        List<TangentPath> pathers = new List<TangentPath>();
+        List<TangentPathfinder> pathers = new List<TangentPathfinder>();
 
         for (var i = 0; i < pairs.Count; i++)
         {
             var node = pairs[i];
             var color = ColorHelper.colors[i];
 
-            pathers.Add(new TangentPath(node[0], node[1], debug: debugTangents, debugRaycast: debugRaycast, debugRaycastLength: debugRaycastLength));
+            pathers.Add(new TangentPathfinder(
+                node[0], 
+                node[1], 
+                debug: debugTangents, 
+                debugRaycast: debugRaycast, 
+                debugRaycastLength: debugRaycastLength, 
+                checkTerrainGradientWhenPathing: checkTerrainGradienWhenPathfinding,
+                maxPathHeightDifferential: maxPathHeightDifferential));
         }
 
         var obstacles = GameObject.FindGameObjectsWithTag(_obstacleTag).ToList();
@@ -122,7 +139,7 @@ public class RoadController : MonoBehaviour
         {
             var basicPath = pather.GetPath();
 
-            if (drawPathGizmos)
+            if (drawTangentPathGizmos)
             {
                 for (var i = 0; i < basicPath.Count - 1; i++)
                 {

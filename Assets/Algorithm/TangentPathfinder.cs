@@ -1,11 +1,13 @@
 ﻿using Assets.Helper;
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Assets.Algorithm
 {
-    public class TangentPath
+    public class TangentPathfinder
     {
         private Vector3 _destination;
         private Vector3 _origin;
@@ -15,8 +17,12 @@ namespace Assets.Algorithm
         private string _objectTag;
         private float _acceptableTerrainSlope;
         private int _rakeLimit;
+        private bool _checkTerrainGradientWhenPathing;
 
-        public TangentPath(Vector3 origin, Vector3 destination, string objectTag = "building", bool debug = false, bool debugRaycast = false, int debugRaycastLength = 1000, float acceptableTerrainSlope = 30f, int rakeLimit = 15)
+        private float _raycastValidMaxHeight = 1.0f;
+        private int _raycastValidMaxSamples = 20;
+
+        public TangentPathfinder(Vector3 origin, Vector3 destination, string objectTag = "building", bool debug = false, bool debugRaycast = false, int debugRaycastLength = 1000, float acceptableTerrainSlope = 30f, int rakeLimit = 15, bool checkTerrainGradientWhenPathing = false, float maxPathHeightDifferential = 1.0f)
         {
             _origin = origin;
             _destination = destination;
@@ -26,6 +32,8 @@ namespace Assets.Algorithm
             _objectTag = objectTag;
             _acceptableTerrainSlope = acceptableTerrainSlope;
             _rakeLimit = rakeLimit;
+            _checkTerrainGradientWhenPathing = checkTerrainGradientWhenPathing;
+            _raycastValidMaxHeight = maxPathHeightDifferential;
         }
 
         public List<Vector3> GetPath()
@@ -48,13 +56,31 @@ namespace Assets.Algorithm
             }
             else
             {
+                var point = hit.point;
+
+                if (_debug)
+                {
+                    Handles.BeginGUI();
+                    GUI.color = Color.black;
+                    Handles.Label(point - (Vector3.right), "hit");
+                    Handles.EndGUI();
+
+                    Gizmos.DrawSphere(point, 0.3f);
+                }
+
+                if (_checkTerrainGradientWhenPathing)
+                {
+                    // voordat we gewoon aannemen dat er een collision is: even checken hoe het terrein eruit ziet
+                    point = GetValidPointAlongRay(_origin, hit.point, _raycastValidMaxHeight, _raycastValidMaxSamples); // TODO; dat nummer bepalen op lengte van lijn
+                }
+
                 // we checken ook of de hit position hetzelfde is als de destination. De MST zou moeten voorkomen dat dit nodig is maar hee *haalt schouders op*
-                if (hit.collider.tag.Equals(_objectTag) && hit.point == _destination)
+                if (hit.collider.tag.Equals(_objectTag) && point == _destination)
                 {
                     return segments;
                 }
 
-                return GetPathSegments(hit.point, _origin, segments);
+                return GetPathSegments(point, _origin, segments);
             }              
         }
 
@@ -79,7 +105,7 @@ namespace Assets.Algorithm
                     {
                         // wat is een no tangents color
                         Gizmos.color = Color.red;
-                        Gizmos.DrawSphere(hit, 0.5f);
+                        Gizmos.DrawSphere(hit, 0.25f);
                     }
 
                     // probeer nog eens maar negeer nu de radius
@@ -94,6 +120,19 @@ namespace Assets.Algorithm
 
                 t1 = tangents[0];
                 t2 = tangents[1];
+
+                if (_debug)
+                {
+                    Gizmos.color = Color.yellow;
+                    Gizmos.DrawSphere(t1, 0.4f);
+                    Gizmos.DrawSphere(t2, 0.4f);
+
+                    Handles.BeginGUI();
+                    GUI.color = Color.black;
+                    Handles.Label(t1 - (Vector3.right), "T1");
+                    Handles.Label(t2 - (Vector3.right), "T2");
+                    Handles.EndGUI();
+                }
 
                 var terrainHelper = new TerrainHelper();
 
@@ -118,8 +157,7 @@ namespace Assets.Algorithm
             if (stepOnRake == 0)
             {
                 // als we hier komen zijn er dus geen geldige tangents te vinden op deze oogabooga manier. 
-                Debug.Log("stepped on rake. Intended?");
-
+                Debug.LogWarning("stepped on rake. Intended?");
                 return segments;
             }
 
@@ -144,36 +182,82 @@ namespace Assets.Algorithm
 
             if (_debug)
             {
-                Gizmos.color = Color.yellow;
-                Gizmos.DrawSphere(tpos, 0.5f);
+                Handles.BeginGUI();
+                GUI.color = Color.black;
+                Handles.Label(tpos - (Vector3.right), "Tpos");
+                Handles.EndGUI();
+
+                Gizmos.color = Color.magenta;
+                Gizmos.DrawSphere(tpos, 0.25f);
                 Gizmos.color = Color.green;
-                Gizmos.DrawSphere(newOrigin, 0.5f);
+                Gizmos.DrawSphere(newOrigin, 0.25f);
             }
 
             // voor dat we het laatste deel van het pad doen, bepaal of nog een obstakel is
-
-            //if (_debugRaycast)
-            //{
-            //    Gizmos.color = Color.red;
-            //    Gizmos.DrawLine(tpos, (_destination - tpos));
-            //}
-
             if (Physics.Raycast(tpos, _destination - tpos, out RaycastHit newHit))
             {
-                // als we colliden met de geconfigureerde tag zijn we er in feite gewoon
-                if (newHit.collider?.tag == _objectTag)
+                var point = newHit.point;
+                if (_checkTerrainGradientWhenPathing)
                 {
-                    // vergeet de laatste tangent niet
+                    point = GetValidPointAlongRay(tpos, newHit.point, _raycastValidMaxHeight, _raycastValidMaxSamples);
+                }
+
+                // als we colliden met de geconfigureerde tag zijn we er in feite gewoon
+                if (newHit.collider?.tag == _objectTag && Vector3.Distance(point, _destination) < 5.0f)
+                {
+                    // we kunnen de destination nu zien liggen, wil niet zeggen dat we er al zijn
+                    // maar we kunnen ook niet op positie controleren, want we hebben het over de rigidbody (destionation) en een raycasthit op de collider.
+
                     segments.Add(_destination);
 
                     return segments;
                 }
 
-                return GetPathSegments(newHit.point, tpos, segments); // en nog een keer
+                return GetPathSegments(point, tpos, segments); // en nog een keer
             }
 
             // dit zou serieus niet moeten gebeuren, dan gaan we het in elk geval zeker weten :)
             throw new Exception("gitaarsolo");
+        }
+
+        private Vector3 GetValidPointAlongRay(Vector3 start, Vector3 end, float maxHeightDiff, int numSamples)
+        {
+            if (maxHeightDiff <= 0)
+                return end;
+
+            if (_debug)
+            {
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawSphere(start, 0.3f);
+                Gizmos.color = Color.blue;
+                Gizmos.DrawSphere(start, 0.2f);
+            }
+
+            for (int i = 1; i <= numSamples; i++)
+            {
+                var t = i / (float)numSamples;
+                var point = Vector3.Lerp(start, end, t);
+                var terrainHeight = Terrain.activeTerrain.SampleHeight(point);
+
+                // Check height difference
+                var diff = Mathf.Abs(point.y - terrainHeight);
+                if (diff > maxHeightDiff)
+                {
+                    point.y -= diff;
+
+                    if (_debug)
+                    {
+                        Gizmos.color = Color.magenta;
+                        Gizmos.DrawSphere(point, 0.25f);
+
+                        Gizmos.DrawLine(point, new Vector3(point.x, point.y += diff, point.z));
+                    }
+
+                    return point; 
+                }
+            }
+
+            return end; // If no issues, return the original endpoint
         }
     }
 }
